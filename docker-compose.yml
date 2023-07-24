@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  client-backend:
+    image: client:0.0.1-SNAPSHOT
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8181:8181"
+    depends_on:
+      service-db:
+          condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8181
+      SPRING_DATASOURCE_URL: jdbc:postgresql://service-db:15432/notification_db
+      SPRING_DATASOURCE_USERNAME: notification_user
+      SPRING_DATASOURCE_PASSWORD: notification_password
+      PGDATA: /var/lib/postgresql/data
+
+  service-db:
+    image: postgres:14.7-alpine
+    environment:
+      POSTGRES_USER: notification_admin
+      POSTGRES_PASSWORD: dfltpwd2023
+      POSTGRES_DB: notification_db
+    ports:
+      - "15432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification_admin -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+volumes:
+  db-data:
